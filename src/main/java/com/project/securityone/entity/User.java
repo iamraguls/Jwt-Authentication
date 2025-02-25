@@ -64,12 +64,13 @@ public class User implements UserDetails {
 
     }
 
-    public User(Integer id, String firstname, String lastname, String email, String password) {
+    public User(Integer id, String firstname, String lastname, String email, String password, Role role) {
         this.id = id;
         this.firstname = firstname;
         this.lastname = lastname;
         this.email = email;
         this.password = password;
+        this.role = role;
     }
 
     public Integer getId() {
