@@ -1,11 +1,16 @@
 package com.project.securityone.config;
 
+import com.project.securityone.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -16,6 +21,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // OncePerRe
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(
@@ -40,8 +48,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // OncePerRe
         // extract the userEmail from jwt token
         userEmail = jwtService.extractUserEmail(jwt);
 
+        if(userEmail!=null && SecurityContextHolder.getContext().getAuthentication()==null){
+            UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
+            // Check if the token is valid
+            if (jwtService.isTokenValid(jwt, userDetails)) {
+                // Create authentication token
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                // Set authentication token in security context
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+        // Continue the filter chain
+        filterChain.doFilter(request, response);
     }
-
-
 }
